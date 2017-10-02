@@ -16,6 +16,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".LogActivity"
+            android:label="@string/title_activity_log"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyCN-Gv8U-JvL0rTvKNVFvbnTe7kf2PIUj8"/>
     </application>
 
 </manifest>
