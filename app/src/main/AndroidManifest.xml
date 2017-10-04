@@ -23,7 +23,7 @@
             android:theme="@style/AppTheme.NoActionBar"></activity>
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCN-Gv8U-JvL0rTvKNVFvbnTe7kf2PIUj8"/>
+            android:value="AIzaSyCIwa6WHzLYUgTD8fmqG5dRpx8ggn_d840"/>
     </application>
 
 </manifest>

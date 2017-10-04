@@ -79,6 +79,7 @@ public class LogActivity extends AppCompatActivity implements  OnMapReadyCallbac
     CameraPosition mCameraPosition;
     MapView mMapView;
     ArrayList<Location> tracker = new ArrayList<Location>();
+    PolylineOptions cur = new PolylineOptions().geodesic(true);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,6 +127,7 @@ public class LogActivity extends AppCompatActivity implements  OnMapReadyCallbac
     @Override
     protected void onDestroy() {
         mMapView.onDestroy();
+        
         super.onDestroy();
     }
 
@@ -302,7 +304,6 @@ public class LogActivity extends AppCompatActivity implements  OnMapReadyCallbac
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(25.3,34.3),16));
             mMap.getUiSettings().setMyLocationButtonEnabled(false);
         }
-        tracker.add(mCurrentLocation);
     }
 
     @SuppressWarnings("MissingPermission")
@@ -337,16 +338,16 @@ public class LogActivity extends AppCompatActivity implements  OnMapReadyCallbac
     @Override
     public void onLocationChanged(Location location){
         mCurrentLocation = location;
+        tracker.add(mCurrentLocation);
+        cur.add(new LatLng(mCurrentLocation.getLatitude(),
+                mCurrentLocation.getLongitude()));
+        if(mMap==null)return;
+        if(tracker.size()<2)return;
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
                 new LatLng(mCurrentLocation.getLatitude(),
                         mCurrentLocation.getLongitude()),16));
         // Polylines are useful for marking paths and routes on the map.
-        mMap.addPolyline(new PolylineOptions().geodesic(true)
-                .add(new LatLng(tracker.get(tracker.size() - 1).getLatitude(),
-                        tracker.get(tracker.size() - 1).getLongitude()))
-                .add(new LatLng(mCurrentLocation.getLatitude(),
-                        mCurrentLocation.getLongitude()))
-        );
-        tracker.add(mCurrentLocation);
+        mMap.clear();
+        mMap.addPolyline(cur);
     }
 }
