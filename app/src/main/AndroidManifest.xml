@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.sigong.travelog">
-
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -22,7 +23,7 @@
             android:theme="@style/AppTheme.NoActionBar"></activity>
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCN-Gv8U-JvL0rTvKNVFvbnTe7kf2PIUj8"/>
+            android:value="AIzaSyCIwa6WHzLYUgTD8fmqG5dRpx8ggn_d840"/>
     </application>
 
 </manifest>
