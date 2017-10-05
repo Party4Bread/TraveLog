@@ -1,35 +1,23 @@
 package com.sigong.travelog;
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.Application;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Camera;
-import android.location.Address;
-import android.location.Geocoder;
 import android.location.Location;
-import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Looper;
 import android.os.Process;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.AppOpsManagerCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.content.PermissionChecker;
+import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -41,29 +29,21 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.Places;
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.logging.Handler;
+import java.util.Date;
 
-public class LogActivity extends AppCompatActivity implements  OnMapReadyCallback,
+public class LogActivity extends FragmentActivity implements  OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener{
@@ -75,12 +55,12 @@ public class LogActivity extends AppCompatActivity implements  OnMapReadyCallbac
     private Location mCurrentLocation;
     private static final String CAMERA_POSITION = "camera_position";
     private static final String LOCATION = "location";
-    private static final String MAPVIEW_BUNDLE_KEY = "mapviewbndl";
     CameraPosition mCameraPosition;
-    MapView mMapView;
-    ArrayList<Location> tracker = new ArrayList<Location>();
+    MapFragment mMapFragment;
+    ArrayList<Location> locTracker = new ArrayList<Location>();
+    ArrayList<TravelAct> actTracker = new ArrayList<TravelAct>();
     PolylineOptions cur = new PolylineOptions().geodesic(true);
-
+    Polyline curPoly;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -92,13 +72,8 @@ public class LogActivity extends AppCompatActivity implements  OnMapReadyCallbac
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_log);
         mLocationPermissionGranted=AskLocationPermission();
-        Bundle mapViewBundle = null;
-        if (savedInstanceState != null) {
-            mapViewBundle = savedInstanceState.getBundle(MAPVIEW_BUNDLE_KEY);
-        }
-        mMapView = (MapView)findViewById(R.id.mapView);
-        mMapView.onCreate(mapViewBundle);
-        mMapView.getMapAsync(this);
+        mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
+        mMapFragment.getMapAsync(this);
 
         buildGoogleApiClinet();
         mGoogleApiClient.connect();
@@ -106,40 +81,18 @@ public class LogActivity extends AppCompatActivity implements  OnMapReadyCallbac
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                if(mMap==null)return;
+                actTracker.add(new TravelAct(ActType.Comment,"KIIIIKII",new Date(),mCurrentLocation));
+                mMap.addMarker(new MarkerOptions()
+                        .title("KIIIIKII")
+                        .position(new LatLng(locTracker.get(locTracker.size()-1).getLatitude(),
+                                locTracker.get(locTracker.size()-1).getLongitude())));
             }
         });
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        mMapView.onStart();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        mMapView.onStop();
-    }
-
-    @Override
-    protected void onDestroy() {
-        mMapView.onDestroy();
-        
-        super.onDestroy();
-    }
-
-    @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        mMapView.onLowMemory();
-    }
-
-    @Override
     protected void onPause() {
-        mMapView.onPause();
         super.onPause();
         if(mGoogleApiClient.isConnected()){
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient,this);
@@ -152,7 +105,6 @@ public class LogActivity extends AppCompatActivity implements  OnMapReadyCallbac
             getDevideLocation();
         }
         super.onResume();
-        mMapView.onResume();
     }
 
     protected synchronized void buildGoogleApiClinet(){
@@ -259,20 +211,12 @@ public class LogActivity extends AppCompatActivity implements  OnMapReadyCallbac
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         getDevideLocation();
-        MapView mapView=(MapView)findViewById(R.id.mapView);
-        mapView.getMapAsync(this);
+        mMapFragment=(MapFragment) getFragmentManager().findFragmentById(R.id.map);
+        mMapFragment.getMapAsync(this);
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState){
-
-        Bundle mapViewBundle = outState.getBundle(MAPVIEW_BUNDLE_KEY);
-        if (mapViewBundle == null) {
-            mapViewBundle = new Bundle();
-            outState.putBundle(MAPVIEW_BUNDLE_KEY, mapViewBundle);
-        }
-
-        mMapView.onSaveInstanceState(mapViewBundle);
         if(mMap!=null){
             outState.putParcelable(CAMERA_POSITION,mMap.getCameraPosition());
             outState.putParcelable(LOCATION,mCurrentLocation);
@@ -312,9 +256,11 @@ public class LogActivity extends AppCompatActivity implements  OnMapReadyCallbac
         if(mLocationPermissionGranted){
             mMap.setMyLocationEnabled(true);
             mMap.getUiSettings().setMyLocationButtonEnabled(true);
+            mMap.getUiSettings().setCompassEnabled(true);
         }else{
             mMap.setMyLocationEnabled(false);
             mMap.getUiSettings().setMyLocationButtonEnabled(false);
+            mMap.getUiSettings().setCompassEnabled(false);
         }
     }
 
@@ -338,16 +284,38 @@ public class LogActivity extends AppCompatActivity implements  OnMapReadyCallbac
     @Override
     public void onLocationChanged(Location location){
         mCurrentLocation = location;
-        tracker.add(mCurrentLocation);
+        locTracker.add(mCurrentLocation);
         cur.add(new LatLng(mCurrentLocation.getLatitude(),
                 mCurrentLocation.getLongitude()));
         if(mMap==null)return;
-        if(tracker.size()<2)return;
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
+        if(locTracker.size()<2) {
+            return;
+        }
+        else if(locTracker.size()<3) {
+            // Polylines are useful for marking paths and routes on the map.
+            mMap.clear();
+            curPoly = mMap.addPolyline(cur);
+            for(int i = 0;i<actTracker.size();i++){
+                TravelAct jj = actTracker.get(i);
+                mMap.addMarker(new MarkerOptions()
+                        .position(new LatLng(jj.location.getLatitude(),jj.location.getLongitude()))
+                        .title(jj.data));
+            }
+        }
+        else{
+            curPoly.remove();
+            curPoly = mMap.addPolyline(cur);
+        }
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
                 new LatLng(mCurrentLocation.getLatitude(),
-                        mCurrentLocation.getLongitude()),16));
-        // Polylines are useful for marking paths and routes on the map.
-        mMap.clear();
-        mMap.addPolyline(cur);
+                        mCurrentLocation.getLongitude()),17));
+
+        /*
+        for(int i = 0;i<actTracker.size();i++){
+            TravelAct jj = actTracker.get(i);
+            mMap.addMarker(new MarkerOptions()
+            .position(new LatLng(jj.location.getLatitude(),jj.location.getLongitude()))
+            .title(jj.data));
+        }*/
     }
 }
