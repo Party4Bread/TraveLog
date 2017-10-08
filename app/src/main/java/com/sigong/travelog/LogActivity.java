@@ -7,10 +7,12 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Process;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
@@ -36,17 +38,22 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class LogActivity extends FragmentActivity implements  OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener{
+
+
     GoogleApiClient mGoogleApiClient=null;
     GoogleMap mMap=null;
     boolean mLocationPermissionGranted =false;
@@ -61,6 +68,9 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
     ArrayList<TravelAct> actTracker = new ArrayList<TravelAct>();
     PolylineOptions cur = new PolylineOptions().geodesic(true);
     Polyline curPoly;
+    LatLngBounds.Builder mLatLngBoundBuilder;
+    Handler mZoomOutHandler = new Handler();
+    Runnable mZoomOutRunnable;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,6 +84,7 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
         mLocationPermissionGranted=AskLocationPermission();
         mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
         mMapFragment.getMapAsync(this);
+        mLatLngBoundBuilder=new LatLngBounds.Builder();
 
         buildGoogleApiClinet();
         mGoogleApiClient.connect();
@@ -89,6 +100,27 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
                                 locTracker.get(locTracker.size()-1).getLongitude())));
             }
         });
+
+        mZoomOutRunnable = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if(mMap==null)return;
+                    if(locTracker.size()<2)return;
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(mLatLngBoundBuilder.build(), 10));
+                    mZoomOutHandler.postDelayed(mZoomOutRunnable,8000);
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                }
+            }
+        };
+    }
+
+    @Override
+    protected void onDestroy() {
+        mZoomOutHandler.removeCallbacks(mZoomOutRunnable);
+
+        super.onDestroy();
     }
 
     @Override
@@ -284,11 +316,15 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
     @Override
     public void onLocationChanged(Location location){
         mCurrentLocation = location;
+
+        LatLng curLoc=new LatLng(mCurrentLocation.getLatitude(),
+                mCurrentLocation.getLongitude());
+
         locTracker.add(mCurrentLocation);
-        cur.add(new LatLng(mCurrentLocation.getLatitude(),
-                mCurrentLocation.getLongitude()));
+        cur.add(curLoc);
         if(mMap==null)return;
         if(locTracker.size()<2) {
+
             return;
         }
         else if(locTracker.size()<3) {
@@ -306,9 +342,10 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
             curPoly.remove();
             curPoly = mMap.addPolyline(cur);
         }
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                new LatLng(mCurrentLocation.getLatitude(),
-                        mCurrentLocation.getLongitude()),17));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(curLoc,17));
+        mLatLngBoundBuilder.include(curLoc);
+        mZoomOutHandler.removeCallbacks(mZoomOutRunnable);
+        mZoomOutHandler.postDelayed(mZoomOutRunnable,8000);
 
         /*
         for(int i = 0;i<actTracker.size();i++){
