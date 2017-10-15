@@ -119,7 +119,6 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
     @Override
     protected void onDestroy() {
         mZoomOutHandler.removeCallbacks(mZoomOutRunnable);
-
         super.onDestroy();
     }
 
