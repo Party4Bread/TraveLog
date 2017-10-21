@@ -8,13 +8,17 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Location;
+import android.media.Image;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Process;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -56,6 +60,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Timer;
@@ -184,14 +189,22 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
             case 1:
                 if(resultCode == RESULT_OK){
                     Uri selectedImage = imageReturnedIntent.getData();
-                    savefile(selectedImage,Environment.getExternalStorageDirectory().getPath()
-                            +File.separatorChar+"TraveLog"+File.separatorChar+actTracker.size()+".pic");
+                    String filename=Environment.getExternalStorageDirectory().getPath()
+                            +File.separatorChar+"TraveLog"+File.separatorChar+actTracker.size()+".pic";
+                    savefile(selectedImage,filename);
 
-                    actTracker.add(new TravelAct(ActType.Photo,actTracker.size()+".pic",new Date(),mCurrentLocation));
-                    mMap.addMarker(new MarkerOptions()
-                            .icon(BitmapDescriptorFactory.fromFile(selectedImage.getPath()))
-                            .position(new LatLng(locTracker.get(locTracker.size()-1).getLatitude(),
-                                    locTracker.get(locTracker.size()-1).getLongitude())));
+                    actTracker.add(new TravelAct(ActType.Photo,Environment.getExternalStorageDirectory().getPath()
+                            +File.separatorChar+"TraveLog"+File.separatorChar+actTracker.size()+".pic",new Date(),mCurrentLocation));
+                    try {
+                        Bitmap bm = MediaStore.Images.Media.getBitmap(getContentResolver(), Uri.parse(filename));
+                        mMap.addMarker(new MarkerOptions()
+                                .icon(BitmapDescriptorFactory.fromBitmap(bm))
+                                .position(new LatLng(locTracker.get(locTracker.size() - 1).getLatitude(),
+                                        locTracker.get(locTracker.size() - 1).getLongitude())));
+                    }
+                    catch (IOException e){
+                        e.printStackTrace();
+                    }
                 }
                 break;
         }
@@ -203,8 +216,10 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
         BufferedOutputStream bos = null;
 
         try {
-            bis = new BufferedInputStream(new FileInputStream(sourceFilename));
-            bos = new BufferedOutputStream(new FileOutputStream(destinationFilename, false));
+
+            //TODO : Fix Error on Here
+            bis = new BufferedInputStream(new FileInputStream (new File(sourceuri)));
+            bos = new BufferedOutputStream(new FileOutputStream(new File(destinationFilename), false));
             byte[] buf = new byte[1024];
             bis.read(buf);
             do {
@@ -438,9 +453,21 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
             curPoly = mMap.addPolyline(cur);
             for(int i = 0;i<actTracker.size();i++){
                 TravelAct jj = actTracker.get(i);
-                mMap.addMarker(new MarkerOptions()
-                        .position(new LatLng(jj.location.getLatitude(),jj.location.getLongitude()))
-                        .title(jj.data));
+                if(jj.actType==ActType.Comment) {
+                    mMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(jj.location.getLatitude(), jj.location.getLongitude()))
+                            .title(jj.data));
+                }
+                else if(jj.actType==ActType.Photo)
+                {
+                    try {
+                        mMap.addMarker(new MarkerOptions()
+                                .position(new LatLng(jj.location.getLatitude(), jj.location.getLongitude()))
+                                .icon(BitmapDescriptorFactory.fromBitmap(MediaStore.Images.Media.getBitmap(getContentResolver(), Uri.fromFile(new File(jj.data))))));
+                    }catch (IOException e){
+                        e.printStackTrace();
+                    }
+                }
             }
         }
         else{
