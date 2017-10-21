@@ -3,6 +3,7 @@ package com.sigong.travelog;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -193,21 +194,58 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
                             +File.separatorChar+"TraveLog"+File.separatorChar+actTracker.size()+".pic";
                     savefile(selectedImage,filename);
 
-                    actTracker.add(new TravelAct(ActType.Photo,Environment.getExternalStorageDirectory().getPath()
-                            +File.separatorChar+"TraveLog"+File.separatorChar+actTracker.size()+".pic",new Date(),mCurrentLocation));
+                    actTracker.add(new TravelAct(ActType.Photo,filename,new Date(),mCurrentLocation));
                     try {
-                        Bitmap bm = MediaStore.Images.Media.getBitmap(getContentResolver(), Uri.parse(filename));
+                        Bitmap bm = decodeFile(new File(filename));
+                        //bm.re
                         mMap.addMarker(new MarkerOptions()
-                                .icon(BitmapDescriptorFactory.fromBitmap(bm))
+                                .icon(BitmapDescriptorFactory.fromBitmap(bm))//TODO:FIXED MARKER SIZE
                                 .position(new LatLng(locTracker.get(locTracker.size() - 1).getLatitude(),
                                         locTracker.get(locTracker.size() - 1).getLongitude())));
                     }
-                    catch (IOException e){
+                    catch (Exception e){
                         e.printStackTrace();
                     }
                 }
                 break;
         }
+    }
+    Bitmap decodeFile(File f){
+
+        try {
+            //Decode image size
+            BitmapFactory.Options o = new BitmapFactory.Options();
+            o.inJustDecodeBounds = true;
+            FileInputStream stream1=new FileInputStream(f);
+            BitmapFactory.decodeStream(stream1,null,o);
+            stream1.close();
+            //Find the correct scale value. It should be the power of 2.
+            // Set width/height of recreated image
+            final int REQUIRED_SIZE=85;
+            int width_tmp=o.outWidth, height_tmp=o.outHeight;
+            int scale=1;
+            while(true){
+                if(width_tmp/2<REQUIRED_SIZE || height_tmp/2<REQUIRED_SIZE)
+                    break;
+                width_tmp/=2;
+                height_tmp/=2;
+                scale*=2;
+            }
+
+            //decode with current scale values
+            BitmapFactory.Options o2 = new BitmapFactory.Options();
+            o2.inSampleSize=scale;
+            FileInputStream stream2=new FileInputStream(f);
+            Bitmap bitmap=BitmapFactory.decodeStream(stream2, null, o2);
+            stream2.close();
+            return bitmap;
+
+        } catch (FileNotFoundException e) {
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
     void savefile(Uri sourceuri,String destinationFilename)
     {
@@ -218,7 +256,7 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
         try {
 
             //TODO : Fix Error on Here
-            bis = new BufferedInputStream(new FileInputStream (new File(sourceuri)));
+            bis = new BufferedInputStream(getContentResolver().openInputStream(sourceuri));
             bos = new BufferedOutputStream(new FileOutputStream(new File(destinationFilename), false));
             byte[] buf = new byte[1024];
             bis.read(buf);
@@ -239,6 +277,18 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
     @Override
     protected void onDestroy() {
         mZoomOutHandler.removeCallbacks(mZoomOutRunnable);
+        TrackerDBHelper trackerDBHelper = new TrackerDBHelper(this,"test.db",null,1);
+        SQLiteDatabase tdb = trackerDBHelper.getWritableDatabase();
+        ContentValues values;
+        for(Location i : locTracker){
+            values = new ContentValues();
+            values.put("LAT", i.getLatitude());
+            values.put("LNG", i.getLongitude());
+            values.put("DATA", "");
+            values.put("TIME", i.getTime());
+            tdb.insert("LocationTable",null,values);
+        }
+        //tdb.insert()
         super.onDestroy();
     }
 

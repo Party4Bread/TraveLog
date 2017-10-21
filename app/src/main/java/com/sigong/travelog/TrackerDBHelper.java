@@ -30,6 +30,7 @@ public class TrackerDBHelper extends SQLiteOpenHelper {
         sb.append(" _ID INTEGER PRIMARY KEY AUTOINCREMENT, ");
         sb.append(" LAT DOUBLE, ");
         sb.append(" LNG DOUBLE, ");
+        sb.append(" DATA TEXT, ");
         sb.append(" TIME INTEGER) ");//long from UTC Epoch
         sb.append(" ");
         // SQLite Database로 쿼리 실행
@@ -47,7 +48,6 @@ public class TrackerDBHelper extends SQLiteOpenHelper {
     {
         Toast.makeText(context, "버전이 올라갔습니다.", Toast.LENGTH_SHORT).show();
     }
-
     public void testDB() {
         SQLiteDatabase db = getReadableDatabase();
     }
