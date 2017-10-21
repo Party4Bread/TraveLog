@@ -12,6 +12,7 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Process;
 import android.provider.Settings;
@@ -20,9 +21,11 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.AlertDialog;
+import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
@@ -36,6 +39,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
@@ -43,6 +47,15 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Timer;
@@ -86,6 +99,12 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
         mMapFragment.getMapAsync(this);
         mLatLngBoundBuilder=new LatLngBounds.Builder();
 
+        File folder = new File(Environment.getExternalStorageDirectory() +
+                File.separator + "TraveLog");
+        boolean success = true;
+        if (!folder.exists()) {
+            success = folder.mkdirs();
+        }
         buildGoogleApiClinet();
         mGoogleApiClient.connect();
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -93,11 +112,53 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
             @Override
             public void onClick(View view) {
                 if(mMap==null)return;
-                actTracker.add(new TravelAct(ActType.Comment,"KIIIIKII",new Date(),mCurrentLocation));
-                mMap.addMarker(new MarkerOptions()
-                        .title("KIIIIKII")
-                        .position(new LatLng(locTracker.get(locTracker.size()-1).getLatitude(),
-                                locTracker.get(locTracker.size()-1).getLongitude())));
+                final String items[] = { "Comment", "Picture" };
+                AlertDialog.Builder ab = new AlertDialog.Builder(LogActivity.this);
+                ab.setTitle("Marker");
+                ab.setSingleChoiceItems(items, 0,
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                // 각 리스트를 선택했을때
+                                dialog.cancel();
+                                switch (whichButton){
+                                    case 0:
+                                        AlertDialog.Builder builder = new AlertDialog.Builder(LogActivity.this);
+                                        builder.setTitle("Comment");
+
+                                        final EditText input = new EditText(LogActivity.this);
+                                        input.setInputType(InputType.TYPE_CLASS_TEXT);
+                                        builder.setView(input);
+
+                                        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                actTracker.add(new TravelAct(ActType.Comment,input.getText().toString(),new Date(),mCurrentLocation));
+                                                mMap.addMarker(new MarkerOptions()
+                                                        .title(input.getText().toString())
+                                                        .position(new LatLng(locTracker.get(locTracker.size()-1).getLatitude(),
+                                                                locTracker.get(locTracker.size()-1).getLongitude())));
+                                            }
+                                        });
+                                        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                dialog.cancel();
+                                            }
+                                        });
+
+                                        builder.show();
+                                        break;
+
+                                    case 1:
+                                        Intent pickPhoto = new Intent(Intent.ACTION_PICK,
+                                                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                                        startActivityForResult(pickPhoto , 1);//one can be replaced with any action code
+                                        break;
+                                }
+                            }
+                });
+
+                ab.show();
             }
         });
 
@@ -116,6 +177,50 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
         };
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent imageReturnedIntent) {
+        super.onActivityResult(requestCode, resultCode, imageReturnedIntent);
+        switch(requestCode) {
+            case 1:
+                if(resultCode == RESULT_OK){
+                    Uri selectedImage = imageReturnedIntent.getData();
+                    savefile(selectedImage,Environment.getExternalStorageDirectory().getPath()
+                            +File.separatorChar+"TraveLog"+File.separatorChar+actTracker.size()+".pic");
+
+                    actTracker.add(new TravelAct(ActType.Photo,actTracker.size()+".pic",new Date(),mCurrentLocation));
+                    mMap.addMarker(new MarkerOptions()
+                            .icon(BitmapDescriptorFactory.fromFile(selectedImage.getPath()))
+                            .position(new LatLng(locTracker.get(locTracker.size()-1).getLatitude(),
+                                    locTracker.get(locTracker.size()-1).getLongitude())));
+                }
+                break;
+        }
+    }
+    void savefile(Uri sourceuri,String destinationFilename)
+    {
+        String sourceFilename= sourceuri.getPath();
+        BufferedInputStream bis = null;
+        BufferedOutputStream bos = null;
+
+        try {
+            bis = new BufferedInputStream(new FileInputStream(sourceFilename));
+            bos = new BufferedOutputStream(new FileOutputStream(destinationFilename, false));
+            byte[] buf = new byte[1024];
+            bis.read(buf);
+            do {
+                bos.write(buf);
+            } while(bis.read(buf) != -1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (bis != null) bis.close();
+                if (bos != null) bos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
     @Override
     protected void onDestroy() {
         mZoomOutHandler.removeCallbacks(mZoomOutRunnable);
@@ -186,7 +291,8 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
                 return true;
             }else{
                 Log.v(TAG,"Permission is revoked");
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
                 return false;
             }
         }else{

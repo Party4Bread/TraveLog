@@ -5,4 +5,7 @@
     <string name="permission_required_toast">권한이 필요합니다!</string>
     <string name="permission_rationale_location">권한이 필요합니다!</string>
     <string name="title_activity_intro">TravelLog</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
 </resources>
