@@ -202,7 +202,7 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
                         Bitmap bm = decodeFile(new File(filename));
                         //bm.re
                         mMap.addMarker(new MarkerOptions()
-                                .icon(BitmapDescriptorFactory.fromBitmap(bm))//TODO:FIXED MARKER SIZE
+                                .icon(BitmapDescriptorFactory.fromBitmap(bm))
                                 .position(new LatLng(locTracker.get(locTracker.size() - 1).getLatitude(),
                                         locTracker.get(locTracker.size() - 1).getLongitude())));
                     }
@@ -213,6 +213,7 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
                 break;
         }
     }
+
     Bitmap decodeFile(File f){
 
         try {
@@ -289,16 +290,16 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
             values.put("LAT", i.getLatitude());
             values.put("LNG", i.getLongitude());
             values.put("DATA", "");
-            values.put("TIME", i.getTime());
+            values.put("TIME", i.getElapsedRealtimeNanos());
             tdb.insert("LocationTable",null,values);
-            Log.i("FFU",new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(i.getTime())));
+            Log.i("FFU",new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(i.getElapsedRealtimeNanos())));
         }
         for(TravelAct i : actTracker){
             values = new ContentValues();
             values.put("LAT", i.location.getLatitude());
             values.put("LNG", i.location.getLongitude());
             values.put("DATA", (i.actType==ActType.Comment?"Text:":"Image:")+i.data);
-            values.put("TIME", i.location.getTime());
+            values.put("TIME", i.location.getElapsedRealtimeNanos());
             tdb.insert("LocationTable",null,values);
         }
 
@@ -541,8 +542,10 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
         }
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(curLoc,17));
         mLatLngBoundBuilder.include(curLoc);
-        mZoomOutHandler.removeCallbacks(mZoomOutRunnable);
-        mZoomOutHandler.postDelayed(mZoomOutRunnable,8000);
+        if(mCurrentLocation.getSpeed()!=0.0) {
+            mZoomOutHandler.removeCallbacks(mZoomOutRunnable);
+            mZoomOutHandler.postDelayed(mZoomOutRunnable, 8000);
+        }
 
         /*
         for(int i = 0;i<actTracker.size();i++){
