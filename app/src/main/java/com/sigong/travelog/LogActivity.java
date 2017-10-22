@@ -16,6 +16,7 @@ import android.media.Image;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Debug;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Process;
@@ -62,6 +63,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.sql.Time;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Timer;
@@ -221,7 +224,7 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
             stream1.close();
             //Find the correct scale value. It should be the power of 2.
             // Set width/height of recreated image
-            final int REQUIRED_SIZE=85;
+            final int REQUIRED_SIZE=130;
             int width_tmp=o.outWidth, height_tmp=o.outHeight;
             int scale=1;
             while(true){
@@ -277,7 +280,8 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
     @Override
     protected void onDestroy() {
         mZoomOutHandler.removeCallbacks(mZoomOutRunnable);
-        TrackerDBHelper trackerDBHelper = new TrackerDBHelper(this,"test.db",null,1);
+        TrackerDBHelper trackerDBHelper = new TrackerDBHelper(this,Environment.getExternalStorageDirectory().getPath()
+                +File.separatorChar+"TraveLog"+File.separatorChar+"test.db",null,1);
         SQLiteDatabase tdb = trackerDBHelper.getWritableDatabase();
         ContentValues values;
         for(Location i : locTracker){
@@ -287,7 +291,18 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
             values.put("DATA", "");
             values.put("TIME", i.getTime());
             tdb.insert("LocationTable",null,values);
+            Log.i("FFU",new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(i.getTime())));
         }
+        for(TravelAct i : actTracker){
+            values = new ContentValues();
+            values.put("LAT", i.location.getLatitude());
+            values.put("LNG", i.location.getLongitude());
+            values.put("DATA", (i.actType==ActType.Comment?"Text:":"Image:")+i.data);
+            values.put("TIME", i.location.getTime());
+            tdb.insert("LocationTable",null,values);
+        }
+
+        tdb.close();
         //tdb.insert()
         super.onDestroy();
     }
