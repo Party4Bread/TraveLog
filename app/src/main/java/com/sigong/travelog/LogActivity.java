@@ -258,8 +258,6 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
         BufferedOutputStream bos = null;
 
         try {
-
-            //TODO : Fix Error on Here
             bis = new BufferedInputStream(getContentResolver().openInputStream(sourceuri));
             bos = new BufferedOutputStream(new FileOutputStream(new File(destinationFilename), false));
             byte[] buf = new byte[1024];
