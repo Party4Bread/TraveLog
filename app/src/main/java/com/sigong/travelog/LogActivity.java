@@ -288,16 +288,16 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
             values.put("LAT", i.getLatitude());
             values.put("LNG", i.getLongitude());
             values.put("DATA", "");
-            values.put("TIME", i.getElapsedRealtimeNanos());
+            values.put("RECTIME", i.getTime());
             tdb.insert("LocationTable",null,values);
-            Log.i("FFU",new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(i.getElapsedRealtimeNanos())));
+            Log.i("debuggii",new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(i.getTime())));
         }
         for(TravelAct i : actTracker){
             values = new ContentValues();
             values.put("LAT", i.location.getLatitude());
             values.put("LNG", i.location.getLongitude());
             values.put("DATA", (i.actType==ActType.Comment?"Text:":"Image:")+i.data);
-            values.put("TIME", i.location.getElapsedRealtimeNanos());
+            values.put("RECTIME", i.location.getTime());
             tdb.insert("LocationTable",null,values);
         }
 
@@ -503,7 +503,7 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
 
         LatLng curLoc=new LatLng(mCurrentLocation.getLatitude(),
                 mCurrentLocation.getLongitude());
-
+        Log.i("debugging",String.valueOf(mCurrentLocation.getTime()));
         locTracker.add(mCurrentLocation);
         cur.add(curLoc);
         if(mMap==null)return;

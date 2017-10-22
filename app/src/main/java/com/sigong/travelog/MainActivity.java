@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
     public void StartViewer(View v){
-        Intent intent = new Intent(this, LogActivity.class);
+        Intent intent = new Intent(this, ViewerActivity.class);
         startActivity(intent);
     }
 

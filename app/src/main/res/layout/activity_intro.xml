@@ -30,24 +30,25 @@
                 tools:layout_editor_absoluteX="8dp">
 
                 <LinearLayout
-                    android:layout_width="210dp"
-                    android:layout_height="247dp">
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:weightSum="5">
 
                     <TextView
                         android:id="@+id/Trave"
+                        android:layout_weight="2"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:gravity="bottom"
                         android:text="Trave"
                         android:textAlignment="viewEnd"
+                        android:textColor="#effdfc"
                         android:textSize="80dp"
-                        android:textStyle="bold"
-                        android:textColor="#effdfc"/>
-                </LinearLayout>
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="247dp">
+                        android:textStyle="bold" />
+
                     <TextView
+                        android:layout_weight="3"
                         android:id="@+id/Log"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
@@ -58,7 +59,9 @@
                         android:textColor="#effdfc"/>
                 </LinearLayout>
 
+
             </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
