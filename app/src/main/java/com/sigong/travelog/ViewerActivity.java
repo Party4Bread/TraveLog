@@ -1,23 +1,30 @@
 package com.sigong.travelog;
 
+import android.app.Fragment;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.os.Environment;
+import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
-public class ViewerActivity extends AppCompatActivity {
-    ArrayList<LatLng> loctracked = new ArrayList<LatLng>();
+public class ViewerActivity extends FragmentActivity implements OnMapReadyCallback {
+    ArrayList<Location> loctracked = new ArrayList<Location>();
+    private ArrayList<TravelAct> acttracked = new ArrayList<TravelAct>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,7 +36,6 @@ public class ViewerActivity extends AppCompatActivity {
         // Define a projection that specifies which columns from the database
         // you will actually use after this query.
         String[] projection = {
-                "_ID",
                 "LAT",
                 "LNG",
                 "DATA",
@@ -46,7 +52,30 @@ public class ViewerActivity extends AppCompatActivity {
             null// The sort order
         );
         c.moveToFirst();
-        loctracked.add(new LatLng(c.getDouble(1),c.getDouble(2)));
+        while(c.isLast()==false){
+            String data = c.getString(c.getColumnIndexOrThrow("DATA"));
+            Log.d("viewer",data);
+            if(data.length()==0){
+                Location loc = new Location("dummy");
+                loc.setTime(c.getLong(c.getColumnIndexOrThrow("RECTIME")));
+                loc.setLatitude(c.getDouble(c.getColumnIndexOrThrow("LAT")));
+                loc.setLongitude(c.getDouble(c.getColumnIndexOrThrow("LNG")));
+                loctracked.add(loc);
+            }
+            else {
+                Location loc = new Location("dummy");
+                loc.setTime(c.getLong(c.getColumnIndexOrThrow("RECTIME")));
+                loc.setLatitude(c.getDouble(c.getColumnIndexOrThrow("LAT")));
+                loc.setLongitude(c.getDouble(c.getColumnIndexOrThrow("LNG")));
+                acttracked.add(new TravelAct(
+                   data.indexOf("TEXT:")==0?ActType.Comment:ActType.Photo,data.substring(data.indexOf(':')),new Date(c.getLong(3)),loc
+                ));
+            }
+            c.moveToNext();
+        }
+        MapFragment mapFragment = (MapFragment) getFragmentManager()
+            .findFragmentById(R.id.map1);
+        mapFragment.getMapAsync(this);
         //c.;
         Log.i("d", (String.valueOf(c.getCount())));
         /*
@@ -70,5 +99,14 @@ public class ViewerActivity extends AppCompatActivity {
         }
 */
         tdb.close();
+    }
+
+    @Override
+    public void onMapReady(GoogleMap mMap) {
+        PolylineOptions options = new PolylineOptions();
+        for(Location i : loctracked){
+            options.add(new LatLng(i.getLatitude(),i.getLongitude()));
+            mMap.addPolyline(options);
+        }
     }
 }
