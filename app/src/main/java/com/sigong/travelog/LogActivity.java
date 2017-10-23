@@ -121,6 +121,7 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
             @Override
             public void onClick(View view) {
                 if(mMap==null)return;
+                if(locTracker.size()==0)return;
                 final String items[] = { "Comment", "Picture" };
                 AlertDialog.Builder ab = new AlertDialog.Builder(LogActivity.this);
                 ab.setTitle("Marker");
@@ -142,6 +143,7 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
                                             @Override
                                             public void onClick(DialogInterface dialog, int which) {
                                                 actTracker.add(new TravelAct(ActType.Comment,input.getText().toString(),new Date(),mCurrentLocation));
+
                                                 mMap.addMarker(new MarkerOptions()
                                                         .title(input.getText().toString())
                                                         .position(new LatLng(locTracker.get(locTracker.size()-1).getLatitude(),
@@ -205,6 +207,7 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
                                 .icon(BitmapDescriptorFactory.fromBitmap(bm))
                                 .position(new LatLng(locTracker.get(locTracker.size() - 1).getLatitude(),
                                         locTracker.get(locTracker.size() - 1).getLongitude())));
+                        bm.recycle();
                     }
                     catch (Exception e){
                         e.printStackTrace();
@@ -540,10 +543,10 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
         }
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(curLoc,17));
         mLatLngBoundBuilder.include(curLoc);
-        if(mCurrentLocation.getSpeed()!=0.0) {
+        //if(mCurrentLocation.hasSpeed()) {
             mZoomOutHandler.removeCallbacks(mZoomOutRunnable);
             mZoomOutHandler.postDelayed(mZoomOutRunnable, 8000);
-        }
+        //}
 
         /*
         for(int i = 0;i<actTracker.size();i++){

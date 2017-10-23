@@ -5,19 +5,26 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -25,6 +32,9 @@ import java.util.Date;
 public class ViewerActivity extends FragmentActivity implements OnMapReadyCallback {
     ArrayList<Location> loctracked = new ArrayList<Location>();
     private ArrayList<TravelAct> acttracked = new ArrayList<TravelAct>();
+    private LatLngBounds.Builder mLatLngBoundBuilder;
+    boolean ViewReady=false,MapReady=false;
+    GoogleMap mMap;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,6 +62,7 @@ public class ViewerActivity extends FragmentActivity implements OnMapReadyCallba
             null// The sort order
         );
         c.moveToFirst();
+        mLatLngBoundBuilder=new LatLngBounds.Builder();
         while(c.isLast()==false){
             String data = c.getString(c.getColumnIndexOrThrow("DATA"));
             Log.d("viewer",data);
@@ -75,38 +86,49 @@ public class ViewerActivity extends FragmentActivity implements OnMapReadyCallba
         }
         MapFragment mapFragment = (MapFragment) getFragmentManager()
             .findFragmentById(R.id.map1);
-        mapFragment.getMapAsync(this);
-        //c.;
-        Log.i("d", (String.valueOf(c.getCount())));
-        /*
-        tdb.query("LocationTable");
-        for(Location i : locTracker){
-            values = new ContentValues();
-            values.put("LAT", i.getLatitude());
-            values.put("LNG", i.getLongitude());
-            values.put("DATA", "");
-            values.put("TIME", i.getElapsedRealtimeNanos());
-            tdb.insert("LocationTable",null,values);
-            Log.i("FFU",new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(i.getElapsedRealtimeNanos())));
-        }
-        for(TravelAct i : actTracker){
-            values = new ContentValues();
-            values.put("LAT", i.location.getLatitude());
-            values.put("LNG", i.location.getLongitude());
-            values.put("DATA", (i.actType==ActType.Comment?"Text:":"Image:")+i.data);
-            values.put("TIME", i.location.getElapsedRealtimeNanos());
-            tdb.insert("LocationTable",null,values);
-        }
-*/
-        tdb.close();
-    }
 
-    @Override
-    public void onMapReady(GoogleMap mMap) {
+        tdb.close();
+        ViewReady=true;
+        mapFragment.getMapAsync(this);
+        Log.i("d", (String.valueOf(c.getCount())));
+        setMap();
+    }
+    private  synchronized void setMap(){
+        if((!MapReady||!ViewReady)) return;
         PolylineOptions options = new PolylineOptions();
         for(Location i : loctracked){
             options.add(new LatLng(i.getLatitude(),i.getLongitude()));
-            mMap.addPolyline(options);
+            mLatLngBoundBuilder.include(new LatLng(i.getLatitude(),i.getLongitude()));
         }
+        mMap.addPolyline(options);
+        mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(mLatLngBoundBuilder.build(), 10));
+        for(TravelAct jj : acttracked){
+            if(jj.actType==ActType.Comment) {
+                mMap.addMarker(new MarkerOptions()
+                        .position(new LatLng(jj.location.getLatitude(), jj.location.getLongitude()))
+                        .title(jj.data));
+            }
+            else if(jj.actType==ActType.Photo)
+            {
+                try {//// TODO: 2017-10-24 NO MARKER??? WHY? 
+                    mMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(jj.location.getLatitude(), jj.location.getLongitude()))
+                            .icon(BitmapDescriptorFactory.fromBitmap(MediaStore.Images.Media.getBitmap(getContentResolver(), Uri.fromFile(new File(jj.data))))));
+                }catch (IOException e){
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+    @Override
+    public void onMapReady(GoogleMap mMap) {
+        this.mMap=mMap;
+        this.mMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback() {
+            @Override
+            public void onMapLoaded() {
+                MapReady=true;
+                setMap();
+            }
+        });
     }
 }
