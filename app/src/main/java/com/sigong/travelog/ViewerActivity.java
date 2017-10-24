@@ -63,27 +63,28 @@ public class ViewerActivity extends FragmentActivity implements OnMapReadyCallba
         );
         c.moveToFirst();
         mLatLngBoundBuilder=new LatLngBounds.Builder();
-        while(c.isLast()==false){
-            String data = c.getString(c.getColumnIndexOrThrow("DATA"));
+        do{
+            String data = c.getString(c.getColumnIndex("DATA"));
             Log.d("viewer",data);
             if(data.length()==0){
                 Location loc = new Location("dummy");
-                loc.setTime(c.getLong(c.getColumnIndexOrThrow("RECTIME")));
-                loc.setLatitude(c.getDouble(c.getColumnIndexOrThrow("LAT")));
-                loc.setLongitude(c.getDouble(c.getColumnIndexOrThrow("LNG")));
+                loc.setTime(c.getLong(c.getColumnIndex("RECTIME")));
+                loc.setLatitude(c.getDouble(c.getColumnIndex("LAT")));
+                loc.setLongitude(c.getDouble(c.getColumnIndex("LNG")));
                 loctracked.add(loc);
             }
             else {
                 Location loc = new Location("dummy");
-                loc.setTime(c.getLong(c.getColumnIndexOrThrow("RECTIME")));
-                loc.setLatitude(c.getDouble(c.getColumnIndexOrThrow("LAT")));
-                loc.setLongitude(c.getDouble(c.getColumnIndexOrThrow("LNG")));
+                loc.setTime(c.getLong(c.getColumnIndex("RECTIME")));
+                loc.setLatitude(c.getDouble(c.getColumnIndex("LAT")));
+                loc.setLongitude(c.getDouble(c.getColumnIndex("LNG")));
                 acttracked.add(new TravelAct(
                    data.indexOf("TEXT:")==0?ActType.Comment:ActType.Photo,data.substring(data.indexOf(':')),new Date(c.getLong(3)),loc
                 ));
+
+
             }
-            c.moveToNext();
-        }
+        }while (c.moveToNext());
         MapFragment mapFragment = (MapFragment) getFragmentManager()
             .findFragmentById(R.id.map1);
 
@@ -110,7 +111,7 @@ public class ViewerActivity extends FragmentActivity implements OnMapReadyCallba
             }
             else if(jj.actType==ActType.Photo)
             {
-                try {//// TODO: 2017-10-24 NO MARKER??? WHY? 
+                try {//// TODO: 2017-10-24 NO MARKER??? WHY?
                     mMap.addMarker(new MarkerOptions()
                             .position(new LatLng(jj.location.getLatitude(), jj.location.getLongitude()))
                             .icon(BitmapDescriptorFactory.fromBitmap(MediaStore.Images.Media.getBitmap(getContentResolver(), Uri.fromFile(new File(jj.data))))));
