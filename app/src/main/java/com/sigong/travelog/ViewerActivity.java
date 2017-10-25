@@ -48,7 +48,7 @@ public class ViewerActivity extends FragmentActivity implements OnMapReadyCallba
         String[] projection = {
                 "LAT",
                 "LNG",
-                "DATA",
+                "ACTDATA",
                 "RECTIME"
         };
 
@@ -64,7 +64,7 @@ public class ViewerActivity extends FragmentActivity implements OnMapReadyCallba
         c.moveToFirst();
         mLatLngBoundBuilder=new LatLngBounds.Builder();
         do{
-            String data = c.getString(c.getColumnIndex("DATA"));
+            String data = c.getString(c.getColumnIndex("ACTDATA"));
             Log.d("viewer",data);
             if(data.length()==0){
                 Location loc = new Location("dummy");
@@ -79,7 +79,7 @@ public class ViewerActivity extends FragmentActivity implements OnMapReadyCallba
                 loc.setLatitude(c.getDouble(c.getColumnIndex("LAT")));
                 loc.setLongitude(c.getDouble(c.getColumnIndex("LNG")));
                 acttracked.add(new TravelAct(
-                   data.indexOf("TEXT:")==0?ActType.Comment:ActType.Photo,data.substring(data.indexOf(':')),new Date(c.getLong(3)),loc
+                   data.indexOf("Text:")==0?ActType.Comment:ActType.Photo,data.substring(data.indexOf(':')+1),new Date(c.getLong(3)),loc
                 ));
 
 

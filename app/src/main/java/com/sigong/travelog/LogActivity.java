@@ -290,7 +290,7 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
             values = new ContentValues();
             values.put("LAT", i.getLatitude());
             values.put("LNG", i.getLongitude());
-            values.put("DATA", "");
+            values.put("ACTDATA", "");
             values.put("RECTIME", i.getTime());
             tdb.insert("LocationTable",null,values);
             Log.i("debuggii",new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(i.getTime())));
@@ -299,7 +299,7 @@ public class LogActivity extends FragmentActivity implements  OnMapReadyCallback
             values = new ContentValues();
             values.put("LAT", i.location.getLatitude());
             values.put("LNG", i.location.getLongitude());
-            values.put("DATA", (i.actType==ActType.Comment?"Text:":"Image:")+i.data);
+            values.put("ACTDATA", (i.actType==ActType.Comment?"Text:":"Image:")+i.data);
             values.put("RECTIME", i.location.getTime());
             tdb.insert("LocationTable",null,values);
         }

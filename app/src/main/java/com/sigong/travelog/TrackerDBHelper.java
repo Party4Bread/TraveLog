@@ -30,7 +30,7 @@ public class TrackerDBHelper extends SQLiteOpenHelper {
         sb.append(" _ID INTEGER PRIMARY KEY AUTOINCREMENT, ");
         sb.append(" LAT DOUBLE, ");
         sb.append(" LNG DOUBLE, ");
-        sb.append(" DATA TEXT, ");
+        sb.append(" ACTDATA TEXT, ");
         sb.append(" RECTIME INTEGER) ");//long from UTC Epoch
         sb.append(" ");
         // SQLite Database로 쿼리 실행
