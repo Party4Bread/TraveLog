@@ -12,6 +12,9 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.SlidingDrawer;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -51,7 +54,10 @@ public class ViewerActivity extends FragmentActivity implements OnMapReadyCallba
                 "ACTDATA",
                 "RECTIME"
         };
-
+        SlidingDrawer slidingDrawer = findViewById(R.id.bottom);
+        slidingDrawer.setEnabled(false);
+        slidingDrawer.setVisibility(View.GONE);
+        Toast.makeText(this,"Sorry, for now time warp function is unstable so we block it.",Toast.LENGTH_LONG).show();//TODO:DELETE IT!!
         Cursor c = tdb.query(
             "LocationTable",// The table to query
             projection,// The columns to return
@@ -81,8 +87,6 @@ public class ViewerActivity extends FragmentActivity implements OnMapReadyCallba
                 acttracked.add(new TravelAct(
                    data.indexOf("Text:")==0?ActType.Comment:ActType.Photo,data.substring(data.indexOf(':')+1),new Date(c.getLong(3)),loc
                 ));
-
-
             }
         }while (c.moveToNext());
         MapFragment mapFragment = (MapFragment) getFragmentManager()
@@ -111,7 +115,7 @@ public class ViewerActivity extends FragmentActivity implements OnMapReadyCallba
             }
             else if(jj.actType==ActType.Photo)
             {
-                try {//// TODO: 2017-10-24 NO MARKER??? WHY?
+                try {
                     mMap.addMarker(new MarkerOptions()
                             .position(new LatLng(jj.location.getLatitude(), jj.location.getLongitude()))
                             .icon(BitmapDescriptorFactory.fromBitmap(MediaStore.Images.Media.getBitmap(getContentResolver(), Uri.fromFile(new File(jj.data))))));
